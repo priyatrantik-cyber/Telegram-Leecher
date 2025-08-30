@@ -19,7 +19,7 @@ src_request_msg = None
 @colab_bot.on_message(filters.command("start") & filters.private)
 async def start(client, message):
     await message.delete()
-    text = "**Hey There, 👋🏼 It's Colab Leecher**\n\n◲ I am a Powerful File Transloading Bot 🚀\n◲ I can Transfer Files To Telegram or Your Google Drive From Various Sources 🦐\n\n\t \t\t<b> This code is modified by 💝 Surya...!!! <b>\n\n <b>Only for testing purpose <b>"
+    text = "**Hey There, 👋🏼 It's Colab Leecher**\n\n◲ I am a Powerful File Transloading Bot 🚀\n◲ I can Transfer Files To Telegram or Your Google Drive From Various Sources 🦐\n\n\t \t\t<b> This code is modified by 💝 Surya...!!! </b>\n\n <b>Only for testing purpose <b/>"
     keyboard = InlineKeyboardMarkup(
         [
             [
