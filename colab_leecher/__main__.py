@@ -1,4 +1,4 @@
-# copyright 2024 © Xron Trix | https://github.com/XronTrix10
+# copyright 2024 © Xron Trix | https://github.com/Xrontrix10
 
 import logging, os, asyncio
 from pyrogram import filters
@@ -11,14 +11,6 @@ from .utility.helper import isLink, setThumbnail, message_deleter, send_settings
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 src_request_msg = None
-
-# A startup handler to start the background task
-@colab_bot.on_startup()
-async def startup_task(client):
-    """Initializes the task queue and starts the background task processor."""
-    logging.info("Colab Leecher Started! Starting background task processor...")
-    BOT.TaskQueue = Queue()
-    asyncio.create_task(task_processor())
 
 
 @colab_bot.on_message(filters.command("start") & filters.private)
@@ -102,13 +94,6 @@ async def setPrefix(client, message):
 @colab_bot.on_message(filters.create(isLink) & ~filters.photo)
 async def handle_url(client, message):
     global BOT, src_request_msg
-
-    # This is the new check to ensure a command was sent first
-    if not BOT.Mode.mode:
-        await message.reply_text(
-            "Please send a command first, like /tupload or /ytupload, to tell me what to do with the link."
-        )
-        return
 
     # Clear old src request message
     if src_request_msg:
@@ -487,15 +472,14 @@ async def task_processor():
         finally:
             BOT.State.task_going = False
             BOT.State.started = False
-            BOT.Mode.mode = ""  # Reset the mode here
             BOT.TaskQueue.task_done()
             await MSG.status_msg.delete()
 
 
 if __name__ == "__main__":
-    try:
-        # This single call starts the bot and manages the event loop,
-        # which will in turn run the on_startup handler to begin the task processor.
-        colab_bot.run()
-    except KeyboardInterrupt:
-        logging.info("Bot stopped by user.")
+    # Initialize the task queue
+    BOT.TaskQueue = Queue()
+    # Start the background task processor
+    asyncio.create_task(task_processor())
+    logging.info("Colab Leecher Started !")
+    colab_bot.run()
