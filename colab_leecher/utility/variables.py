@@ -22,7 +22,7 @@ class BOT:
     class Options:
         stream_upload = True
         convert_video = True
-        convert_quality = False
+        convert_quality = True #changed False to true
         is_split = True
         caption = "code"
         video_out = "mp4"
@@ -88,7 +88,7 @@ class Paths:
 
 
 class Messages:
-    caution_msg = "\n\n<i>💖 This code is modified by Surya...!!! \n BUT the main owner is XronTrix10 <b>Because, Time Is Precious ✨</b></i>"
+    caution_msg = "\n\n<b>💖 This code is modified by Surya...!!! \n BUT the main owner is XronTrix10 <b>\n\n<b><i> When I'm Doin This, Do Something Else \n Because, Time Is Precious ✨</b></i>"
     download_name = ""
     task_msg = ""
     status_head = f"<b>📥 DOWNLOADING » </b>\n"
