@@ -11,7 +11,8 @@ Pillow
 psutil
 pytz
 #pyrofork==2.2.11
-pyrofork
+#pyrofork
+pyroblack==2.5.0
 requests
 tgcrypto
 uvloop
