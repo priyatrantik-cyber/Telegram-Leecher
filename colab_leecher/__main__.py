@@ -115,45 +115,42 @@ async def handle_url(client, message):
 
     if src_request_msg:
         await src_request_msg.delete()
-    if BOT.State.task_going == False and BOT.State.started:
-        temp_source = message.text.splitlines()
+    
+    # The following block that enforced a single task has been removed.
+    # The bot will now handle any link it receives.
 
-        # Check for arguments in message
-        for _ in range(3):
-            if temp_source[-1][0] == "[":
-                BOT.Options.custom_name = temp_source[-1][1:-1]
-                temp_source.pop()
-            elif temp_source[-1][0] == "{":
-                BOT.Options.zip_pswd = temp_source[-1][1:-1]
-                temp_source.pop()
-            elif temp_source[-1][0] == "(":
-                BOT.Options.unzip_pswd = temp_source[-1][1:-1]
-                temp_source.pop()
-            else:
-                break
+    temp_source = message.text.splitlines()
 
-        BOT.SOURCE = temp_source
-        keyboard = InlineKeyboardMarkup(
+    # Check for arguments in message
+    for _ in range(3):
+        if temp_source[-1][0] == "[":
+            BOT.Options.custom_name = temp_source[-1][1:-1]
+            temp_source.pop()
+        elif temp_source[-1][0] == "{":
+            BOT.Options.zip_pswd = temp_source[-1][1:-1]
+            temp_source.pop()
+        elif temp_source[-1][0] == "(":
+            BOT.Options.unzip_pswd = temp_source[-1][1:-1]
+            temp_source.pop()
+        else:
+            break
+
+    BOT.SOURCE = temp_source
+    keyboard = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("Regular", callback_data="normal")],
             [
-                [InlineKeyboardButton("Regular", callback_data="normal")],
-                [
-                    InlineKeyboardButton("Compress", callback_data="zip"),
-                    InlineKeyboardButton("Extract", callback_data="unzip"),
-                ],
-                [InlineKeyboardButton("UnDoubleZip", callback_data="undzip")],
-            ]
-        )
-        await message.reply_text(
-            text=f"<b>🐹 Select Type of {BOT.Mode.mode.capitalize()} You Want » </b>\n\nRegular:<i> Normal file upload</i>\nCompress:<i> Zip file upload</i>\nExtract:<i> extract before upload</i>\nUnDoubleZip:<i> Unzip then compress</i>",
-            reply_markup=keyboard,
-            quote=True,
-        )
-    elif BOT.State.started:
-        await message.delete()
-        await message.reply_text(
-            "<i>I am Already Working ! Please Wait Until I finish 😣!!</i>"
-        )
-
+                InlineKeyboardButton("Compress", callback_data="zip"),
+                InlineKeyboardButton("Extract", callback_data="unzip"),
+            ],
+            [InlineKeyboardButton("UnDoubleZip", callback_data="undzip")],
+        ]
+    )
+    await message.reply_text(
+        text=f"<b>🐹 Select Type of {BOT.Mode.mode.capitalize()} You Want » </b>\n\nRegular:<i> Normal file upload</i>\nCompress:<i> Zip file upload</i>\nExtract:<i> extract before upload</i>\nUnDoubleZip:<i> Unzip then compress</i>",
+        reply_markup=keyboard,
+        quote=True,
+    )
 
 @colab_bot.on_callback_query()
 async def handle_options(client, callback_query):
