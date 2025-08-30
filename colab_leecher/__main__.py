@@ -72,7 +72,7 @@ async def yt_upload(client, message):
     global BOT, src_request_msg
     BOT.Mode.mode = "leech"
     BOT.Mode.ytdl = True
-    BOT.Options.convert_quality = True
+    #BOT.Options.convert_quality = True
     BOT.Setting.convert_quality = "High"
 
     text = "<b>⚡ Send YTDL DOWNLOAD LINK(s) 🔗»</b>\n\n🦀 Follow the below pattern\n\n<code>https//linktofile1.mp4\nhttps//linktofile2.mp4\n[Custom name space.mp4]\n{Password for zipping}</code>"
