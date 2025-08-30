@@ -1,17 +1,14 @@
 # copyright 2024 © Xron Trix | https://github.com/Xrontrix10
 
-
-import logging, os
+import logging, os, asyncio
 from pyrogram import filters
 from datetime import datetime
-from asyncio import sleep, get_event_loop
+from asyncio import sleep, get_event_loop, Queue
 from colab_leecher import colab_bot, OWNER
-from colab_leecher.utility.handler import cancelTask
+from colab_leecher.utility.handler import cancelTask, taskScheduler
 from .utility.variables import BOT, MSG, BotTimes, Paths
-from .utility.task_manager import taskScheduler, task_starter
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from .utility.helper import isLink, setThumbnail, message_deleter, send_settings
-
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 src_request_msg = None
 
@@ -39,10 +36,8 @@ async def telegram_upload(client, message):
     global BOT, src_request_msg
     BOT.Mode.mode = "leech"
     BOT.Mode.ytdl = False
-
     text = "<b>⚡ Send Me DOWNLOAD LINK(s) 🔗»</b>\n\n🦀 Follow the below pattern\n\n<code>https//linktofile1.mp4\nhttps//linktofile2.mp4\n[Custom name space.mp4]\n{Password for zipping}\n(Password for unzip)</code>"
-
-    src_request_msg = await task_starter(message, text)
+    src_request_msg = await message.reply_text(text, quote=True)
 
 
 @colab_bot.on_message(filters.command("gdupload") & filters.private)
@@ -50,10 +45,8 @@ async def drive_upload(client, message):
     global BOT, src_request_msg
     BOT.Mode.mode = "mirror"
     BOT.Mode.ytdl = False
-
     text = "<b>⚡ Send Me DOWNLOAD LINK(s) 🔗»</b>\n\n🦀 Follow the below pattern\n\n<code>https//linktofile1.mp4\nhttps//linktofile2.mp4\n[Custom name space.mp4]\n{Password for zipping}\n(Password for unzip)</code>"
-
-    src_request_msg = await task_starter(message, text)
+    src_request_msg = await message.reply_text(text, quote=True)
 
 
 @colab_bot.on_message(filters.command("drupload") & filters.private)
@@ -61,10 +54,8 @@ async def directory_upload(client, message):
     global BOT, src_request_msg
     BOT.Mode.mode = "dir-leech"
     BOT.Mode.ytdl = False
-
     text = "<b>⚡ Send Me FOLDER PATH 🔗»</b>\n\n🦀 Below is an example\n\n<code>/home/user/Downloads/bot</code>"
-
-    src_request_msg = await task_starter(message, text)
+    src_request_msg = await message.reply_text(text, quote=True)
 
 
 @colab_bot.on_message(filters.command("ytupload") & filters.private)
@@ -74,10 +65,8 @@ async def yt_upload(client, message):
     BOT.Mode.ytdl = True
     BOT.Options.convert_quality = True
     BOT.Setting.convert_quality = "High"
-
     text = "<b>⚡ Send YTDL DOWNLOAD LINK(s) 🔗»</b>\n\n🦀 Follow the below pattern\n\n<code>https//linktofile1.mp4\nhttps//linktofile2.mp4\n[Custom name space.mp4]\n{Password for zipping}</code>"
-
-    src_request_msg = await task_starter(message, text)
+    src_request_msg = await message.reply_text(text, quote=True)
 
 
 @colab_bot.on_message(filters.command("settings") & filters.private)
@@ -93,31 +82,27 @@ async def setPrefix(client, message):
     if BOT.State.prefix:
         BOT.Setting.prefix = message.text
         BOT.State.prefix = False
-
         await send_settings(client, message, message.reply_to_message_id, False)
         await message.delete()
     elif BOT.State.suffix:
         BOT.Setting.suffix = message.text
         BOT.State.suffix = False
-
         await send_settings(client, message, message.reply_to_message_id, False)
         await message.delete()
 
 
 @colab_bot.on_message(filters.create(isLink) & ~filters.photo)
 async def handle_url(client, message):
-    global BOT
+    global BOT, src_request_msg
 
-    # Reset
+    # Clear old src request message
+    if src_request_msg:
+        await src_request_msg.delete()
+
+    # Reset options for the new task
     BOT.Options.custom_name = ""
     BOT.Options.zip_pswd = ""
     BOT.Options.unzip_pswd = ""
-
-    if src_request_msg:
-        await src_request_msg.delete()
-    
-    # The following block that enforced a single task has been removed.
-    # The bot will now handle any link it receives.
 
     temp_source = message.text.splitlines()
 
@@ -152,33 +137,39 @@ async def handle_url(client, message):
         quote=True,
     )
 
+
 @colab_bot.on_callback_query()
 async def handle_options(client, callback_query):
     global BOT, MSG
 
+    # Gather task details
     if callback_query.data in ["normal", "zip", "unzip", "undzip"]:
         BOT.Mode.type = callback_query.data
+        task_details = {
+            'mode': BOT.Mode.mode,
+            'source': BOT.SOURCE,
+            'type': BOT.Mode.type,
+            'options': {
+                'custom_name': BOT.Options.custom_name,
+                'zip_pswd': BOT.Options.zip_pswd,
+                'unzip_pswd': BOT.Options.unzip_pswd,
+                'convert_quality': BOT.Options.convert_quality,
+            },
+            'ytdl': BOT.Mode.ytdl
+        }
+
         await callback_query.message.delete()
         await colab_bot.delete_messages(
             chat_id=callback_query.message.chat.id,
             message_ids=callback_query.message.reply_to_message_id,
         )
-        MSG.status_msg = await colab_bot.send_message(
-            chat_id=OWNER,
-            text="#STARTING_TASK\n\n**Starting your task in a few Seconds...🦐**",
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [InlineKeyboardButton("Cancel ❌", callback_data="cancel")],
-                ]
-            ),
+
+        # Add the new task to the queue
+        await BOT.TaskQueue.put(task_details)
+        await callback_query.message.reply_text(
+            f"**Task added to queue.**\n\nThere are **{BOT.TaskQueue.qsize()}** tasks waiting.",
+            quote=True
         )
-        BOT.State.task_going = True
-        BOT.State.started = False
-        BotTimes.start_time = datetime.now()
-        event_loop = get_event_loop()
-        BOT.TASK = event_loop.create_task(taskScheduler())  # type: ignore
-        await BOT.TASK
-        BOT.State.task_going = False
 
     elif callback_query.data == "video":
         keyboard = InlineKeyboardMarkup(
@@ -327,27 +318,31 @@ async def handle_options(client, callback_query):
     # @main Triggering Actual Leech Functions
     elif callback_query.data in ["ytdl-true", "ytdl-false"]:
         BOT.Mode.ytdl = True if callback_query.data == "ytdl-true" else False
+        task_details = {
+            'mode': BOT.Mode.mode,
+            'source': BOT.SOURCE,
+            'type': BOT.Mode.type,
+            'options': {
+                'custom_name': BOT.Options.custom_name,
+                'zip_pswd': BOT.Options.zip_pswd,
+                'unzip_pswd': BOT.Options.unzip_pswd,
+                'convert_quality': BOT.Options.convert_quality,
+            },
+            'ytdl': BOT.Mode.ytdl
+        }
+
         await callback_query.message.delete()
         await colab_bot.delete_messages(
             chat_id=callback_query.message.chat.id,
             message_ids=callback_query.message.reply_to_message_id,
         )
-        MSG.status_msg = await colab_bot.send_message(
-            chat_id=OWNER,
-            text="#STARTING_TASK\n\n**Starting your task in a few Seconds...🦐**",
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [InlineKeyboardButton("Cancel ❌", callback_data="cancel")],
-                ]
-            ),
+
+        # Add the new task to the queue
+        await BOT.TaskQueue.put(task_details)
+        await callback_query.message.reply_text(
+            f"**Task added to queue.**\n\nThere are **{BOT.TaskQueue.qsize()}** tasks waiting.",
+            quote=True
         )
-        BOT.State.task_going = True
-        BOT.State.started = False
-        BotTimes.start_time = datetime.now()
-        event_loop = get_event_loop()
-        BOT.TASK = event_loop.create_task(taskScheduler())  # type: ignore
-        await BOT.TASK
-        BOT.State.task_going = False
 
     # If user Wants to Stop The Task
     elif callback_query.data == "cancel":
@@ -453,5 +448,38 @@ async def help_command(client, message):
     await message_deleter(message, msg)
 
 
-logging.info("Colab Leecher Started !")
-colab_bot.run()
+async def task_processor():
+    """This function continuously processes tasks from the queue."""
+    while True:
+        task_details = await BOT.TaskQueue.get()
+        BOT.State.task_going = True
+        BOT.State.started = False
+        BotTimes.start_time = datetime.now()
+        MSG.status_msg = await colab_bot.send_message(
+            chat_id=OWNER,
+            text="#STARTING_TASK\n\n**Starting your task in a few Seconds...🦐**",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [InlineKeyboardButton("Cancel ❌", callback_data="cancel")],
+                ]
+            ),
+        )
+        try:
+            # Pass the task details to the taskScheduler
+            await taskScheduler(task_details)
+        except Exception as e:
+            logging.error(f"Error processing task: {e}")
+        finally:
+            BOT.State.task_going = False
+            BOT.State.started = False
+            BOT.TaskQueue.task_done()
+            await MSG.status_msg.delete()
+
+
+if __name__ == "__main__":
+    # Initialize the task queue
+    BOT.TaskQueue = Queue()
+    # Start the background task processor
+    asyncio.create_task(task_processor())
+    logging.info("Colab Leecher Started !")
+    colab_bot.run()
