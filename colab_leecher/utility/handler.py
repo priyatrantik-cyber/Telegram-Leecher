@@ -1,15 +1,16 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
 
+
 import os
 import shutil
 import logging
 import pathlib
-import asyncio
+from asyncio import sleep
 from time import time
-from natsort import natsorted
-from os import makedirs, path as ospath
-from datetime import datetime
 from colab_leecher import OWNER, colab_bot
+from natsort import natsorted
+from datetime import datetime
+from os import makedirs, path as ospath
 from colab_leecher.uploader.telegram import upload_file
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from colab_leecher.utility.variables import (
@@ -35,6 +36,7 @@ from colab_leecher.utility.helper import (
     sizeUnit,
     sysINFO,
 )
+
 
 async def Leech(folder_path: str, remove: bool):
     global BOT, BotTimes, Messages, Paths, Transfer
@@ -87,7 +89,7 @@ async def Leech(folder_path: str, remove: bool):
             shutil.rmtree(Paths.temp_zpath)
 
         else:
-            if not ospath.exists(Paths.temp_files_dir):  # Create Directory
+            if not ospath.exists(Paths.temp_files_dir): # Create Directory
                 makedirs(Paths.temp_files_dir)
 
             if not remove:  # Copy To Temp Dir for Renaming Purposes
@@ -150,7 +152,7 @@ async def Zip_Handler(down_path: str, is_split: bool, remove: bool):
         makedirs(Paths.temp_zpath)
     await archive(down_path, is_split, remove)
 
-    await asyncio.sleep(2)  # Time for renmaing newly created archives
+    await sleep(2)  # Time for renmaing newly created archives
 
     Transfer.total_down_size = getSize(Paths.temp_zpath)
 
@@ -196,7 +198,6 @@ async def cancelTask(Reason: str):
     text = f"#TASK_STOPPED\n\n**╭🔗 Source » **__[Here]({Messages.src_link})__\n**├🦄 Mode » **__{BOT.Mode.mode.capitalize()}__\n**├🤔 Reason » **__{Reason}__\n**╰🍃 Spent Time » **__{getTime((datetime.now() - BotTimes.start_time).seconds)}__"
     if BOT.State.task_going:
         try:
-            BOT.TaskQueue.empty() # Clear the queue
             BOT.TASK.cancel()  # type: ignore
             shutil.rmtree(Paths.WORK_PATH)
         except Exception as e:
@@ -224,6 +225,7 @@ async def cancelTask(Reason: str):
                     ]
                 ),
             )
+
 
 async def SendLogs(is_leech: bool):
     global Transfer, Messages
@@ -306,12 +308,3 @@ async def SendLogs(is_leech: bool):
 
     BOT.State.started = False
     BOT.State.task_going = False
-
-
-async def taskScheduler(task_details):
-    # This is a placeholder for your actual task logic
-    # The queue_processor now passes in all the task_details.
-    # You should update your task logic to use these details.
-    logging.info(f"Processing task: {task_details}")
-    await asyncio.sleep(10) # Simulating task processing
-    logging.info("Task completed.")
