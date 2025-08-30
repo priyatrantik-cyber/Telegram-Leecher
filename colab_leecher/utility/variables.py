@@ -88,7 +88,7 @@ class Paths:
 
 
 class Messages:
-    caution_msg = "\n\n<b>💖 This code is modified by Surya...!!! \n BUT the main owner is XronTrix10 <b>\n\n<b><i> When I'm Doin This, Do Something Else \n Because, Time Is Precious ✨</b></i>"
+    caution_msg = "\n\n<b>💖 This code is modified by Surya...!!!<b> \n <b>BUT the main owner is XronTrix10 <b>\n\n<b><i> When I'm Doin This, Do Something Else \n Because, Time Is Precious ✨</b></i>"
     download_name = ""
     task_msg = ""
     status_head = f"<b>📥 DOWNLOADING » </b>\n"
