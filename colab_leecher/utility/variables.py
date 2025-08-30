@@ -12,7 +12,7 @@ class BOT:
     class Setting:
         stream_upload = "Media"
         convert_video = "Yes"
-        convert_quality = "Low"
+        convert_quality = "High"
         caption = "Monospace"
         split_video = "Split Videos"
         prefix = ""
@@ -88,7 +88,7 @@ class Paths:
 
 
 class Messages:
-    caution_msg = "\n\n<i>💖 When I'm Doin This, Do Something Else ! <b>Because, Time Is Precious ✨</b></i>"
+    caution_msg = "\n\n<i>💖 This code is modified by Surya...!!! \n BUT the main owner is XronTrix10 <b>Because, Time Is Precious ✨</b></i>"
     download_name = ""
     task_msg = ""
     status_head = f"<b>📥 DOWNLOADING » </b>\n"
