@@ -95,6 +95,13 @@ async def setPrefix(client, message):
 async def handle_url(client, message):
     global BOT, src_request_msg
 
+    # This is the new check to ensure a command was sent first
+    if not BOT.Mode.mode:
+        await message.reply_text(
+            "Please send a command first, like /tupload or /ytupload, to tell me what to do with the link."
+        )
+        return
+
     # Clear old src request message
     if src_request_msg:
         await src_request_msg.delete()
@@ -472,14 +479,27 @@ async def task_processor():
         finally:
             BOT.State.task_going = False
             BOT.State.started = False
+            BOT.Mode.mode = ""  # Reset the mode here
             BOT.TaskQueue.task_done()
             await MSG.status_msg.delete()
 
 
-if __name__ == "__main__":
+async def main():
+    """Main entry point for the bot, handling startup and background tasks."""
     # Initialize the task queue
     BOT.TaskQueue = Queue()
-    # Start the background task processor
+    # Start the bot client (which also starts the event loop)
+    await colab_bot.start()
+    logging.info("Colab Leecher Started!")
+    # Now that the event loop is running, we can create our background task
     asyncio.create_task(task_processor())
-    logging.info("Colab Leecher Started !")
-    colab_bot.run()
+    # Keep the bot running indefinitely
+    await colab_bot.idle()
+
+
+if __name__ == "__main__":
+    try:
+        # Run the main asynchronous function
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logging.info("Bot stopped by user.")
