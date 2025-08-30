@@ -1,4 +1,4 @@
-# copyright 2024 © Xron Trix | https://github.com/Xrontrix10
+# copyright 2024 © Xron Trix | https://github.com/XronTrix10
 
 import logging, os, asyncio
 from pyrogram import filters
@@ -11,6 +11,14 @@ from .utility.helper import isLink, setThumbnail, message_deleter, send_settings
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 src_request_msg = None
+
+# A startup handler to start the background task
+@colab_bot.on_startup()
+async def startup_task(client):
+    """Initializes the task queue and starts the background task processor."""
+    logging.info("Colab Leecher Started! Starting background task processor...")
+    BOT.TaskQueue = Queue()
+    asyncio.create_task(task_processor())
 
 
 @colab_bot.on_message(filters.command("start") & filters.private)
@@ -484,26 +492,10 @@ async def task_processor():
             await MSG.status_msg.delete()
 
 
-async def main():
-    """Main entry point for the bot, handling startup and background tasks."""
-    # Initialize the task queue
-    BOT.TaskQueue = Queue()
-    
-    # Start the bot client (which also starts the event loop)
-    await colab_bot.start()
-    logging.info("Colab Leecher Started!")
-    
-    # Now that the event loop is running, we can create our background task.
-    # We do this after starting the bot to ensure the loop is ready.
-    asyncio.create_task(task_processor())
-    
-    # Keep the bot running indefinitely
-    await colab_bot.idle()
-
-
 if __name__ == "__main__":
     try:
-        # Run the main asynchronous function
-        asyncio.run(main())
+        # This single call starts the bot and manages the event loop,
+        # which will in turn run the on_startup handler to begin the task processor.
+        colab_bot.run()
     except KeyboardInterrupt:
         logging.info("Bot stopped by user.")
