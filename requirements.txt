@@ -12,7 +12,8 @@ psutil
 pytz
 #pyrofork==2.2.11
 #pyrofork
-pyroblack==2.5.0
+#pyroblack==2.5.0
+pyrogram
 requests
 tgcrypto
 uvloop
