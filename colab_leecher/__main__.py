@@ -488,10 +488,17 @@ async def main():
     """Main entry point for the bot, handling startup and background tasks."""
     # Initialize the task queue
     BOT.TaskQueue = Queue()
-    # Now that the event loop is running, we can create our background task
+    
+    # Start the bot client (which also starts the event loop)
+    await colab_bot.start()
+    logging.info("Colab Leecher Started!")
+    
+    # Now that the event loop is running, we can create our background task.
+    # We do this after starting the bot to ensure the loop is ready.
     asyncio.create_task(task_processor())
-    # Start the bot client (which also starts the event loop) and keep it running indefinitely
-    await colab_bot.run()
+    
+    # Keep the bot running indefinitely
+    await colab_bot.idle()
 
 
 if __name__ == "__main__":
