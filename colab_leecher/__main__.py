@@ -276,7 +276,7 @@ async def main():
     # Start the task processing worker as a background task
     asyncio.create_task(task_processor_worker())
 
-    # Run the Pyrogram bot
+    # This is the corrected line
     await colab_bot.run()
 
 
@@ -293,4 +293,7 @@ async def task_processor_worker():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Remove the `asyncio.run(main())`
+    # and call the main function directly.
+    # The `colab_bot.run()` method will handle the event loop.
+    colab_bot.run(main())
