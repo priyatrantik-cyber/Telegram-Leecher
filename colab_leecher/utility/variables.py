@@ -22,7 +22,7 @@ class BOT:
     class Options:
         stream_upload = True
         convert_video = True
-        convert_quality = True #changed False to true
+        convert_quality = False #changed False to true
         is_split = True
         caption = "code"
         video_out = "mp4"
