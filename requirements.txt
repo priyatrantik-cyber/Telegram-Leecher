@@ -11,8 +11,9 @@ Pillow
 psutil
 pytz
 #pyrofork==2.2.11
-pyrofork
-#pyroblack==2.5.0
+pyroblack==2.4.4   # Recommended by User
+#pyrofork
+#pyroblack==2.5.0 this is recommended by the owner
 requests
 tgcrypto
 uvloop
