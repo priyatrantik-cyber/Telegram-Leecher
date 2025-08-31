@@ -272,12 +272,14 @@ async def help_command(client, message):
 async def main():
     # Start the bot
     logging.info("Colab Leecher Started !")
-
+    
     # Start the task processing worker as a background task
     asyncio.create_task(task_processor_worker())
 
-    # This is the corrected line
-    await colab_bot.run()
+    # This is the corrected structure.
+    # The `colab_bot.run()` call should not be here.
+    # It will be called once at the top level.
+    # `await colab_bot.run()`
 
 
 async def task_processor_worker():
@@ -293,7 +295,6 @@ async def task_processor_worker():
 
 
 if __name__ == "__main__":
-    # Remove the `asyncio.run(main())`
-    # and call the main function directly.
-    # The `colab_bot.run()` method will handle the event loop.
+    # Call `colab_bot.run` and pass the `main()` coroutine to it.
+    # This ensures a single event loop is created and managed by Pyrogram.
     colab_bot.run(main())
