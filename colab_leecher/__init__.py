@@ -1,31 +1,22 @@
-# copyright 2024 © Xron Trix | https://github.com/Xrontrix10
+# copyright 2023 © Xron Trix | https://github.com/Xrontrix10
 
-import os
-import logging
-from pyrogram import Client
-from config import API_ID, API_HASH, BOT_TOKEN, DUMP_ID, OWNER, LOG_URL
+import logging, json
+from uvloop import install
+from pyrogram.client import Client
 
-if os.path.exists('log.txt'):
-    with open('log.txt', 'r+') as log:
-        log.truncate(0)
+# Read the dictionary from the txt file
+with open("/content/Telegram-Leecher/credentials.json", "r") as file:
+    credentials = json.loads(file.read())
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('log.txt'),
-        logging.StreamHandler()
-    ]
-)
+API_ID = credentials["API_ID"]
+API_HASH = credentials["API_HASH"]
+BOT_TOKEN = credentials["BOT_TOKEN"]
+OWNER = credentials["USER_ID"]
+DUMP_ID = credentials["DUMP_ID"]
 
-logging.getLogger('pyrogram').setLevel(logging.ERROR)
 
-colab_bot = Client(
-    'Colab_Leecher',
-    api_id=API_ID,
-    api_hash=API_HASH,
-    bot_token=BOT_TOKEN,
-    plugins=dict(root='colab_leecher')
-)
+logging.basicConfig(level=logging.INFO)
 
-logging.info("Starting Colab Leecher... Wait!")
+install()
+
+colab_bot = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
