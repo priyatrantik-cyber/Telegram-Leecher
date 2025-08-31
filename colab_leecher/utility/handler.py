@@ -1,5 +1,6 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
 
+
 import os
 import shutil
 import logging
@@ -14,6 +15,7 @@ from colab_leecher.uploader.telegram import upload_file
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from colab_leecher.utility.variables import (
     BOT,
+    MSG,
     BotTimes,
     Messages,
     Paths,
@@ -36,17 +38,14 @@ from colab_leecher.utility.helper import (
 )
 
 
-async def Leech(task, folder_path: str, remove: bool):
-    """
-    Refactored Leech function to accept a task object.
-    All status updates now use the task.status_msg.
-    """
+async def Leech(folder_path: str, remove: bool):
+    global BOT, BotTimes, Messages, Paths, Transfer
     files = [str(p) for p in pathlib.Path(folder_path).glob("**/*") if p.is_file()]
     for f in natsorted(files):
         file_path = ospath.join(folder_path, f)
 
         # Converting Video Files
-        if task.options.convert_video and fileType(file_path) == "video":
+        if BOT.Options.convert_video and fileType(file_path) == "video":
             file_path = await videoConverter(file_path)
 
     Transfer.total_down_size = getSize(folder_path)
@@ -73,7 +72,7 @@ async def Leech(task, folder_path: str, remove: bool):
                 BotTimes.current_time = time()
                 Messages.status_head = f"<b>📤 UPLOADING SPLIT » {count} OF {len(dir_list)} Files</b>\n\n<code>{file_name}</code>\n"
                 try:
-                    await task.status_msg.edit_text(
+                    MSG.status_msg = await MSG.status_msg.edit_text(
                         text=Messages.task_msg
                         + Messages.status_head
                         + "\n⏳ __Starting.....__"
@@ -90,7 +89,7 @@ async def Leech(task, folder_path: str, remove: bool):
             shutil.rmtree(Paths.temp_zpath)
 
         else:
-            if not ospath.exists(Paths.temp_files_dir):  # Create Directory
+            if not ospath.exists(Paths.temp_files_dir): # Create Directory
                 makedirs(Paths.temp_files_dir)
 
             if not remove:  # Copy To Temp Dir for Renaming Purposes
@@ -100,9 +99,11 @@ async def Leech(task, folder_path: str, remove: bool):
             new_path = shortFileName(file_path)
             os.rename(file_path, new_path)
             BotTimes.current_time = time()
-            Messages.status_head = f"<b>📤 UPLOADING » </b>\n\n<code>{file_name}</code>\n"
+            Messages.status_head = (
+                f"<b>📤 UPLOADING » </b>\n\n<code>{file_name}</code>\n"
+            )
             try:
-                await task.status_msg.edit_text(
+                MSG.status_msg = await MSG.status_msg.edit_text(
                     text=Messages.task_msg
                     + Messages.status_head
                     + "\n⏳ __Starting.....__"
@@ -130,14 +131,15 @@ async def Leech(task, folder_path: str, remove: bool):
         shutil.rmtree(Paths.temp_files_dir)
 
 
-async def Zip_Handler(task, down_path: str, is_split: bool, remove: bool):
-    """
-    Refactored Zip_Handler to accept a task object.
-    """
-    Messages.status_head = f"<b>🔐 ZIPPING » </b>\n\n<code>{Messages.download_name}</code>\n"
+async def Zip_Handler(down_path: str, is_split: bool, remove: bool):
+    global BOT, Messages, MSG, Transfer
+
+    Messages.status_head = (
+        f"<b>🔐 ZIPPING » </b>\n\n<code>{Messages.download_name}</code>\n"
+    )
 
     try:
-        await task.status_msg.edit_text(
+        MSG.status_msg = await MSG.status_msg.edit_text(
             text=Messages.task_msg + Messages.status_head + sysINFO(),
             reply_markup=keyboard(),
         )
@@ -150,7 +152,7 @@ async def Zip_Handler(task, down_path: str, is_split: bool, remove: bool):
         makedirs(Paths.temp_zpath)
     await archive(down_path, is_split, remove)
 
-    await sleep(2)  # Time for renaming newly created archives
+    await sleep(2)  # Time for renmaing newly created archives
 
     Transfer.total_down_size = getSize(Paths.temp_zpath)
 
@@ -158,13 +160,14 @@ async def Zip_Handler(task, down_path: str, is_split: bool, remove: bool):
         shutil.rmtree(down_path)
 
 
-async def Unzip_Handler(task, down_path: str, remove: bool):
-    """
-    Refactored Unzip_Handler to accept a task object.
-    """
-    Messages.status_head = f"\n<b>📂 EXTRACTING » </b>\n\n<code>{Messages.download_name}</code>\n"
+async def Unzip_Handler(down_path: str, remove: bool):
+    global MSG, Messages
 
-    await task.status_msg.edit_text(
+    Messages.status_head = (
+        f"\n<b>📂 EXTRACTING » </b>\n\n<code>{Messages.download_name}</code>\n"
+    )
+
+    MSG.status_msg = await MSG.status_msg.edit_text(
         text=Messages.task_msg
         + Messages.status_head
         + "\n⏳ __Starting.....__"
@@ -191,48 +194,48 @@ async def Unzip_Handler(task, down_path: str, remove: bool):
         shutil.rmtree(down_path)
 
 
-async def cancelTask(task, Reason: str):
-    """
-    Refactored cancelTask to accept a task object.
-    """
-    text = f"#TASK_STOPPED\n\n**╭🔗 Source » **__[Here]({Messages.src_link})__\n**├🦄 Mode » **__{task.mode.capitalize()}__\n**├🤔 Reason » **__{Reason}__\n**╰🍃 Spent Time » **__{getTime((datetime.now() - task.start_time).seconds)}__"
-    
-    try:
-        task.task_coroutine.cancel()
-        shutil.rmtree(Paths.WORK_PATH)
-    except Exception as e:
-        logging.error(f"Error Deleting Task Folder: {e}")
-    finally:
-        await task.status_msg.delete()
-        await colab_bot.send_message(
-            chat_id=OWNER,
-            text=text,
-            reply_markup=InlineKeyboardMarkup(
-                [
+async def cancelTask(Reason: str):
+    text = f"#TASK_STOPPED\n\n**╭🔗 Source » **__[Here]({Messages.src_link})__\n**├🦄 Mode » **__{BOT.Mode.mode.capitalize()}__\n**├🤔 Reason » **__{Reason}__\n**╰🍃 Spent Time » **__{getTime((datetime.now() - BotTimes.start_time).seconds)}__"
+    if BOT.State.task_going:
+        try:
+            BOT.TASK.cancel()  # type: ignore
+            shutil.rmtree(Paths.WORK_PATH)
+        except Exception as e:
+            logging.error(f"Error Deleting Task Folder: {e}")
+        else:
+            logging.info(f"On-Going Task Cancelled !")
+        finally:
+            BOT.State.task_going = False
+            await MSG.status_msg.delete()
+            await colab_bot.send_message(
+                chat_id=OWNER,
+                text=text,
+                reply_markup=InlineKeyboardMarkup(
                     [
-                        InlineKeyboardButton(
-                            "Channel 📣",
-                            url="https://t.me/Colab_Leecher",
-                        ),
-                        InlineKeyboardButton(
-                            "Group 💬",
-                            url="https://t.me/Colab_Leecher_Discuss",
-                        ),
-                    ],
-                ]
-            ),
-        )
+                        [
+                            InlineKeyboardButton(  # Opens a web URL
+                                "Channel 📣",
+                                url="https://t.me/Colab_Leecher",
+                            ),
+                            InlineKeyboardButton(  # Opens a web URL
+                                "Group 💬",
+                                url="https://t.me/Colab_Leecher_Discuss",
+                            ),
+                        ],
+                    ]
+                ),
+            )
 
 
-async def SendLogs(task, is_leech: bool):
-    """
-    Refactored SendLogs to accept a task object.
-    """
+async def SendLogs(is_leech: bool):
+    global Transfer, Messages
     final_text = f"<b>☘️ File Count:</b>  <code>{len(Transfer.sent_file)}</code>\n\n<b>📜 Logs:</b>\n"
     l_ink = "⌬─────[「 Colab Usage 」](https://colab.research.google.com/drive/12hdEqaidRZ8krqj7rpnyDzg1dkKmvdvp)─────⌬"
 
     if is_leech:
-        file_count = f"├<b>☘️ File Count » </b><code>{len(Transfer.sent_file)} Files</code>\n"
+        file_count = (
+            f"├<b>☘️ File Count » </b><code>{len(Transfer.sent_file)} Files</code>\n"
+        )
     else:
         file_count = ""
 
@@ -243,57 +246,65 @@ async def SendLogs(task, is_leech: bool):
     )
 
     last_text = (
-        f"\n\n<b>#{(task.mode).upper()}_COMPLETE 🔥</b>\n\n"
+        f"\n\n<b>#{(BOT.Mode.mode).upper()}_COMPLETE 🔥</b>\n\n"
         + f"╭<b>📛 Name » </b><code>{Messages.download_name}</code>\n"
         + f"├<b>📦 Size » </b><code>{size}</code>\n"
         + file_count
-        + f"╰<b>🍃 Saved Time »</b> <code>{getTime((datetime.now() - task.start_time).seconds)}</code>"
+        + f"╰<b>🍃 Saved Time »</b> <code>{getTime((datetime.now() - BotTimes.start_time).seconds)}</code>"
     )
 
-    await task.status_msg.reply_text(
-        text=f"**SOURCE »** __[Here]({Messages.src_link})__" + last_text
-    )
-    await task.status_msg.edit_text(
-        text=Messages.task_msg + l_ink + last_text,
-        reply_markup=InlineKeyboardMarkup(
-            [
+    if BOT.State.task_going:
+        await MSG.sent_msg.reply_text(
+            text=f"**SOURCE »** __[Here]({Messages.src_link})__" + last_text
+        )
+        await MSG.status_msg.edit_text(
+            text=Messages.task_msg + l_ink + last_text,
+            reply_markup=InlineKeyboardMarkup(
                 [
-                    InlineKeyboardButton(
-                        "Git Repo 🪲",
-                        url="https://github.com/XronTrix10/Telegram-Leecher",
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        "Channel 📣",
-                        url="https://t.me/Colab_Leecher",
-                    ),
-                    InlineKeyboardButton(
-                        "Group 💬",
-                        url="https://t.me/Colab_Leecher_Discuss",
-                    ),
-                ],
-            ]
-        ),
-    )
+                    [
+                        InlineKeyboardButton(
+                            "Git Repo 🪲",
+                            url="https://github.com/XronTrix10/Telegram-Leecher",
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButton(  # Opens a web URL
+                            "Channel 📣",
+                            url="https://t.me/Colab_Leecher",
+                        ),
+                        InlineKeyboardButton(  # Opens a web URL
+                            "Group 💬",
+                            url="https://t.me/Colab_Leecher_Discuss",
+                        ),
+                    ],
+                ]
+            ),
+        )
 
-    if is_leech:
-        try:
-            final_texts = []
-            for i in range(len(Transfer.sent_file)):
-                file_link = f"https://t.me/c/{Messages.link_p}/{Transfer.sent_file[i].id}"
-                fileName = Transfer.sent_file_names[i]
-                fileText = f"\n({str(i+1).zfill(2)}) <a href={file_link}>{fileName}</a>"
-                if len(final_text + fileText) >= 4096:
-                    final_texts.append(final_text)
-                    final_text = fileText
-                else:
-                    final_text += fileText
-            final_texts.append(final_text)
+        if is_leech:
+            try:
+                final_texts = []
+                for i in range(len(Transfer.sent_file)):
+                    file_link = (
+                        f"https://t.me/c/{Messages.link_p}/{Transfer.sent_file[i].id}"
+                    )
+                    fileName = Transfer.sent_file_names[i]
+                    fileText = (
+                        f"\n({str(i+1).zfill(2)}) <a href={file_link}>{fileName}</a>"
+                    )
+                    if len(final_text + fileText) >= 4096:
+                        final_texts.append(final_text)
+                        final_text = fileText
+                    else:
+                        final_text += fileText
+                final_texts.append(final_text)
 
-            for fn_txt in final_texts:
-                await task.status_msg.reply_text(text=fn_txt)
-        except Exception as e:
-            Err = f"<b>Error Sending logs » </b><i>{e}</i>"
-            Err += f"\n\n<i>⚠️ If You are Unknown with this **ERROR**, Then Forward This Message in [Colab Leecher Discussion](https://t.me/Colab_Leecher_Discuss) Where [Xron Trix](https://t.me/XronTrix) may fix it</i>"
-            await task.status_msg.reply_text(text=Err)
+                for fn_txt in final_texts:
+                    MSG.status_msg = await MSG.status_msg.reply_text(text=fn_txt)
+            except Exception as e:
+                Err = f"<b>Error Sending logs » </b><i>{e}</i>"
+                Err += f"\n\n<i>⚠️ If You are Unknown with this **ERROR**, Then Forward This Message in [Colab Leecher Discussion](https://t.me/Colab_Leecher_Discuss) Where [Xron Trix](https://t.me/XronTrix) may fix it</i>"
+                await MSG.status_msg.reply_text(text=Err)
+
+    BOT.State.started = False
+    BOT.State.task_going = False
